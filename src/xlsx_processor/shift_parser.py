@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from openpyxl import load_workbook
+from openpyxl.utils import column_index_from_string
 
 from xlsx_processor.user import Employee, EmployeePage, HourRecord
 
@@ -53,6 +54,21 @@ def _record_code_from_block(code_row: tuple[Any, ...], start: int) -> str:
     return ""
 
 
+def _max_column_to_index(value: str | int | None) -> int | None:
+    """Convert -c/--max-column value (e.g. 'AS') to 1-based column index."""
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value if value >= 1 else None
+    s = str(value).strip().upper()
+    if not s:
+        return None
+    try:
+        return column_index_from_string(s)
+    except Exception:
+        return None
+
+
 def _is_page_break_row(row: tuple[Any, ...] | None) -> bool:
     if row is None:
         return False
@@ -65,6 +81,7 @@ def _is_page_break_row(row: tuple[Any, ...] | None) -> bool:
 def parse_shift_to_employee_pages(
     path: str | Path,
     sheet_name: str | None = None,
+    max_column: str | int | None = None,
 ) -> list[EmployeePage]:
     """
     Parse the Shift workbook in the given xlsx into a list of EmployeePage.
@@ -73,11 +90,13 @@ def parse_shift_to_employee_pages(
     - Rows containing "SUPERVISOR SIGNATURE" start a new page.
     - After "Name", every 3 columns form one HourRecord (rt, t15, r20);
       record_name is taken from the header row above the Emp # row (row index - 2).
+    - If max_column is set (e.g. "AS"), only columns up to that column are read.
 
     Args:
         path: Path to the xlsx file.
         sheet_name: Workbook name containing the shift data; if None, use first sheet
             whose name contains "Shift".
+        max_column: Optional max column letter or 1-based index; only read data up to this column.
 
     Returns:
         List of EmployeePage, one per "page" (separated by SUPERVISOR SIGNATURE rows).
@@ -112,6 +131,8 @@ def parse_shift_to_employee_pages(
     record_code_row_idx = max(0, record_name_row_idx - 1)
     record_code_row = rows[record_code_row_idx]
 
+    max_col_1based = _max_column_to_index(max_column)
+
     pages: list[EmployeePage] = []
     current_employees: list[Employee] = []
 
@@ -135,6 +156,9 @@ def parse_shift_to_employee_pages(
         hour_records: list[HourRecord] = []
         start = name_col + 1
         while start + 2 < len(row):
+            # 0-based start -> 1-based column of block end = start + 3; stop if beyond max_column
+            if max_col_1based is not None and (start + 3) > max_col_1based:
+                break
             record_code = _record_code_from_block(record_code_row, start)
             record_name = _record_name_from_block(record_name_row, start)
             rt = _cell_str(row[start] if start < len(row) else None)
