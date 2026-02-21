@@ -1,0 +1,22 @@
+# uv / venv
+.venv/
+.python-version
+
+# build & dist
+build/
+dist/
+*.egg-info/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# xlsx data / output
+*.xlsx

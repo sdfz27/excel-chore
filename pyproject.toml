@@ -1,0 +1,19 @@
+[project]
+name = "xlsx-processor"
+version = "0.1.0"
+description = "Read xlsx files and list workbook/sheet names"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "openpyxl>=3.1.0",
+]
+
+[project.scripts]
+xlsx-processor = "xlsx_processor.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/xlsx_processor"]
