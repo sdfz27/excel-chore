@@ -53,6 +53,18 @@ uv run xlsx-processor path/to/file.xlsx -s Sheet1 -c AS
 uv run xlsx-processor path/to/file.xlsx -s Sheet1 --max-column AS
 ```
 
+### 桌面 GUI
+
+```bash
+uv run xlsx-processor-gui
+```
+
+- 选择要打开的 xlsx 文件
+- 在清单中勾选要处理的工作表（workbook）
+- 可选：指定最大列（如 AS）
+- 指定输出文件路径
+- 点击 Process 执行导出（逻辑与 CLI `-o` 一致）
+
 ## 在代码中使用
 
 ```python

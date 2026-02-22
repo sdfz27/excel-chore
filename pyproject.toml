@@ -10,6 +10,7 @@ dependencies = [
 
 [project.scripts]
 xlsx-processor = "xlsx_processor.cli:main"
+xlsx-processor-gui = "xlsx_processor.gui_app:main"
 
 [build-system]
 requires = ["hatchling"]

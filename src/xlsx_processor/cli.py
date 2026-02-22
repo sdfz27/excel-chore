@@ -118,7 +118,14 @@ def _run_employee_default(
     When shift_sheet_names is set (e.g. from -s Shift1 Shift2), parse each of those sheets per path; when None, auto-detect one Shift sheet.
     When max_column is set (e.g. AS), only read data up to that column.
     """
-    all_rows: list[tuple[str, str, str, str, str, str, str]] = []
+    if output_path:
+        n, err = export_employee_hours(paths, shift_sheet_names, max_column, output_path)
+        if err:
+            print(err, file=sys.stderr)
+        elif not quiet:
+            print(f"已写入 {n} 行到 {output_path.resolve()}", file=sys.stderr)
+        return
+
     for path in paths:
         sheets_to_parse: list[str | None] = (
             list(shift_sheet_names) if shift_sheet_names else [None]
@@ -131,42 +138,26 @@ def _run_employee_default(
             except (FileNotFoundError, ValueError) as e:
                 print(f"{path}" + (f" [{sheet_name}]" if sheet_name else "") + f": {e}", file=sys.stderr)
                 continue
-            if not output_path:
+            if not quiet:
+                print(f"文件: {path.resolve()}" + (f"  工作表: {sheet_name}" if sheet_name else ""))
+            for page_idx, page in enumerate(pages):
                 if not quiet:
-                    print(f"文件: {path.resolve()}" + (f"  工作表: {sheet_name}" if sheet_name else ""))
-                for page_idx, page in enumerate(pages):
-                    if not quiet:
-                        print(f"  --- EmployeePage {page_idx + 1} ---")
-                    for emp in page.employees:
-                        if not (emp.employee_id or "").strip():
-                            continue
-                        if quiet:
-                            print(f"{emp.employee_id}\t{emp.name}")
-                        else:
-                            print(f"    {emp.employee_id}  {emp.name}")
-                            for hr in emp.hour_records:
-                                if _is_hour_record_empty(hr) or not _is_hour_record_valid(hr):
-                                    continue
-                                print(f"      [{hr.record_code}] {hr.record_name}: rt={hr.rt} t15={hr.t15} r20={hr.r20}")
-                    if not quiet:
-                        print()
-                if not quiet and pages:
-                    print()
-            if output_path:
-                for page in pages:
-                    for emp in page.employees:
-                        if not (emp.employee_id or "").strip():
-                            continue
+                    print(f"  --- EmployeePage {page_idx + 1} ---")
+                for emp in page.employees:
+                    if not (emp.employee_id or "").strip():
+                        continue
+                    if quiet:
+                        print(f"{emp.employee_id}\t{emp.name}")
+                    else:
+                        print(f"    {emp.employee_id}  {emp.name}")
                         for hr in emp.hour_records:
-                            if not _is_hour_record_empty(hr) and _is_hour_record_valid(hr):
-                                all_rows.append(
-                                    (emp.employee_id, emp.name, hr.record_code, hr.record_name, hr.rt, hr.t15, hr.r20)
-                                )
-    if output_path:
-        _write_employee_hours_xlsx(output_path, all_rows)
-        if not quiet:
-            n = len(all_rows)
-            print(f"已写入 {n} 行到 {output_path.resolve()}", file=sys.stderr)
+                            if _is_hour_record_empty(hr) or not _is_hour_record_valid(hr):
+                                continue
+                            print(f"      [{hr.record_code}] {hr.record_name}: rt={hr.rt} t15={hr.t15} r20={hr.r20}")
+                if not quiet:
+                    print()
+            if not quiet and pages:
+                print()
 
 
 def _write_employee_hours_xlsx(
@@ -181,6 +172,50 @@ def _write_employee_hours_xlsx(
     for r in rows:
         ws.append(list(r))
     wb.save(path)
+
+
+def export_employee_hours(
+    paths: list[Path],
+    sheet_names: list[str] | None,
+    max_column: str | None,
+    output_path: Path,
+) -> tuple[int, str | None]:
+    """Parse selected sheets and write non-empty, valid HourRecords to output xlsx.
+    Returns (rows_written, None) on success, or (0, error_message) on failure.
+    Used by both CLI and GUI.
+    """
+    all_rows: list[tuple[str, str, str, str, str, str, str]] = []
+    for path in paths:
+        sheets_to_parse: list[str | None] = list(sheet_names) if sheet_names else [None]
+        for sheet_name in sheets_to_parse:
+            try:
+                pages = parse_shift_to_employee_pages(
+                    path, sheet_name=sheet_name, max_column=max_column
+                )
+            except (FileNotFoundError, ValueError) as e:
+                return 0, str(e)
+            for page in pages:
+                for emp in page.employees:
+                    if not (emp.employee_id or "").strip():
+                        continue
+                    for hr in emp.hour_records:
+                        if not _is_hour_record_empty(hr) and _is_hour_record_valid(hr):
+                            all_rows.append(
+                                (
+                                    emp.employee_id,
+                                    emp.name,
+                                    hr.record_code,
+                                    hr.record_name,
+                                    hr.rt,
+                                    hr.t15,
+                                    hr.r20,
+                                )
+                            )
+    try:
+        _write_employee_hours_xlsx(output_path, all_rows)
+        return len(all_rows), None
+    except Exception as e:
+        return 0, str(e)
 
 
 def _print_workbook_names(paths: list[Path], quiet: bool) -> None:
