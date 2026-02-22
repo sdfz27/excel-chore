@@ -65,6 +65,50 @@ uv run xlsx-processor-gui
 - 指定输出文件路径
 - 点击 Process 执行导出（逻辑与 CLI `-o` 一致）
 
+### 打包为 Windows 桌面 exe
+
+使用 [PyInstaller](https://pyinstaller.org/) 将 GUI 打成单个 Windows 可执行文件（无需安装 Python 即可运行）。
+
+**1. 安装打包依赖（可选）**
+
+```bash
+uv sync --extra build-exe
+# 或
+uv pip install pyinstaller
+```
+
+**2. 在项目根目录执行打包**
+
+在 `c:\projects\python\python-suji` 下执行（保证 `src` 和 `scripts` 存在）：
+
+```bash
+uv run pyinstaller --onefile --windowed -n xlsx-processor-gui --paths=src scripts/run_gui.py
+```
+
+- `--onefile`：生成单个 .exe（否则是一目录 + exe）
+- `--windowed`：无控制台窗口（GUI 应用）
+- `-n xlsx-processor-gui`：输出 exe 名称
+- `--paths=src`：让 PyInstaller 找到 `xlsx_processor` 包
+- `scripts/run_gui.py`：GUI 入口脚本
+
+**3. 获取 exe**
+
+打包完成后，可执行文件在：
+
+```
+dist/xlsx-processor-gui.exe
+```
+
+将 `dist\xlsx-processor-gui.exe` 复制到任意位置即可在 Windows 上运行，无需本机安装 Python。
+
+**可选：指定图标**
+
+若有 `.ico` 文件，可加上：
+
+```bash
+uv run pyinstaller --onefile --windowed -n xlsx-processor-gui --paths=src --icon=app.ico scripts/run_gui.py
+```
+
 ## 在代码中使用
 
 ```python

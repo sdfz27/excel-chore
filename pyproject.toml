@@ -8,6 +8,11 @@ dependencies = [
     "openpyxl>=3.1.0",
 ]
 
+[project.optional-dependencies]
+build-exe = [
+    "pyinstaller>=6.0.0",
+]
+
 [project.scripts]
 xlsx-processor = "xlsx_processor.cli:main"
 xlsx-processor-gui = "xlsx_processor.gui_app:main"
