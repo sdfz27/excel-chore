@@ -19,6 +19,21 @@ def _cell_str(v: Any) -> str:
     return str(v).strip()
 
 
+def _special_code_str(v: Any) -> str:
+    """Return special_code as string; treat None and 0 as empty (no "0" for missing values)."""
+    if v is None:
+        return ""
+    s = str(v).strip()
+    if not s:
+        return ""
+    try:
+        if float(s) == 0:
+            return ""
+    except ValueError:
+        pass
+    return s
+
+
 def _find_header_row(rows: list[tuple[Any, ...]]) -> int:
     """Find 0-based row index that contains both 'Emp #' and 'Name'."""
     for i, row in enumerate(rows):
@@ -152,6 +167,9 @@ def parse_shift_to_employee_pages(
             continue
         employee_id = _cell_str(emp_id_val)
         name = _cell_str(name_val)
+        special_col = emp_col + 1
+        special_val = row[special_col] if special_col < len(row) else None
+        special_code = _special_code_str(special_val)
 
         hour_records: list[HourRecord] = []
         start = name_col + 1
@@ -181,6 +199,7 @@ def parse_shift_to_employee_pages(
             Employee(
                 employee_id=employee_id,
                 name=name,
+                special_code=special_code,
                 hour_records=hour_records,
             )
         )

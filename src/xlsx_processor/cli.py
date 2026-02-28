@@ -147,9 +147,9 @@ def _run_employee_default(
                     if not (emp.employee_id or "").strip():
                         continue
                     if quiet:
-                        print(f"{emp.employee_id}\t{emp.name}")
+                        print(f"{emp.employee_id}\t{emp.name}\t{emp.special_code}")
                     else:
-                        print(f"    {emp.employee_id}  {emp.name}")
+                        print(f"    {emp.employee_id}  {emp.name}  [{emp.special_code}]")
                         for hr in emp.hour_records:
                             if _is_hour_record_empty(hr) or not _is_hour_record_valid(hr):
                                 continue
@@ -162,13 +162,13 @@ def _run_employee_default(
 
 def _write_employee_hours_xlsx(
     path: Path,
-    rows: list[tuple[str, str, str, str, str, str, str]],
+    rows: list[tuple[str, str, str, str, str, str, str, str]],
 ) -> None:
-    """Write rows (employee_id, name, record_code, record_name, rt, t15, r20) to a new xlsx."""
+    """Write rows (employee_id, name, special_code, record_code, record_name, rt, t15, r20) to a new xlsx."""
     wb = Workbook()
     ws = wb.active
     ws.title = "EmployeeHours"
-    ws.append(["Employee ID", "Name", "Record Code", "Record Name", "RT", "T15", "R20"])
+    ws.append(["Employee ID", "Name", "Special Code", "Record Code", "Record Name", "RT", "T15", "R20"])
     for r in rows:
         ws.append(list(r))
     wb.save(path)
@@ -184,7 +184,7 @@ def export_employee_hours(
     Returns (rows_written, None) on success, or (0, error_message) on failure.
     Used by both CLI and GUI.
     """
-    all_rows: list[tuple[str, str, str, str, str, str, str]] = []
+    all_rows: list[tuple[str, str, str, str, str, str, str, str]] = []
     for path in paths:
         sheets_to_parse: list[str | None] = list(sheet_names) if sheet_names else [None]
         for sheet_name in sheets_to_parse:
@@ -204,6 +204,7 @@ def export_employee_hours(
                                 (
                                     emp.employee_id,
                                     emp.name,
+                                    emp.special_code,
                                     hr.record_code,
                                     hr.record_name,
                                     hr.rt,

@@ -1,7 +1,7 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
+# Python (any subfolder)
+**/__pycache__/
+**/*.pyc
+**/*.pyo
 
 # uv / venv
 .venv/

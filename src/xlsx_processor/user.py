@@ -15,6 +15,7 @@ class HourRecord:
 class Employee:
     employee_id: str
     name: str
+    special_code: str
     hour_records: list[HourRecord]
 
 @dataclass(frozen=True)
